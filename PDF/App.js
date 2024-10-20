@@ -1,20 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, Button, ActivityIndicator, Alert, StyleSheet, TextInput } from 'react-native';
 import axios from 'axios';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 const App = () => {
   const [dataContratante, setDataContratante] = useState(null);
-  const [dataProfissional, setDataProfissional] = useState(null);
+  const [dataContratado, setDataContratado] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [idContratante, setIdContratante] = useState(''); // Estado para o ID do contratante
+  const [idContratado, setIdContratado] = useState(''); // Estado para o ID do Contratado
 
   const fetchContratanteData = async () => {
+    if (!idContratante) {
+      Alert.alert('Erro', 'Por favor, insira um ID de contratante válido.');
+      return;
+    }
+    
     setLoading(true);
     setError(null); // Limpa erros anteriores
     try {
-      const response = await axios.get('http://192.168.15.119:8000/api/cli/9d48f5c9-7cd9-4a81-9e69-b0081ad1082a');
+      const response = await axios.get(`http://192.168.15.119:8000/api/cli/${idContratante}`);
       setDataContratante(response.data);
     } catch (err) {
       setError(err.message);
@@ -24,25 +31,34 @@ const App = () => {
     }
   };
 
-  const fetchProfissionalData = async () => {
+  const fetchContratadoData = async () => {
+    if (!idContratado) {
+      Alert.alert('Erro', 'Por favor, insira um ID de Contratado válido.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null); // Limpa erros anteriores
     try {
-      const response = await axios.get('http://192.168.15.119:8000/api/pro/9d48fc9d-8675-4501-ac2a-0230cf94ad33');
-      setDataProfissional(response.data);
+      const response = await axios.get(`http://192.168.15.119:8000/api/pro/${idContratado}`);
+      setDataContratado(response.data);
     } catch (err) {
       setError(err.message);
-      Alert.alert('Erro ao buscar dados do profissional', err.message);
+      Alert.alert('Erro ao buscar dados do Contratado', err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const createPDF = async () => {
-    if (!dataContratante || !dataProfissional) {
+    if (!dataContratante || !dataContratado) {
       Alert.alert('Erro', 'Nenhum dado disponível para gerar o PDF.');
       return;
     }
 
     // Extraindo os campos específicos
     const { nomeContratante, cpfContratante } = dataContratante;
-    const { nomeContratado, cpfContratado } = dataProfissional;
+    const { nomeContratado, cpfContratado } = dataContratado;
 
     // HTML do contrato
     const html = `
@@ -106,29 +122,40 @@ const App = () => {
     });
   };
 
-  useEffect(() => {
-    fetchContratanteData();
-    fetchProfissionalData();
-  }, []);
-
   return (
     <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="ID do Contratante"
+        value={idContratante}
+        onChangeText={setIdContratante}
+      />
+      <Button title="Buscar Contratante" onPress={fetchContratanteData} />
+      
+      <TextInput
+        style={styles.input}
+        placeholder="ID do Contratado"
+        value={idContratado}
+        onChangeText={setIdContratado}
+      />
+      <Button title="Buscar Contratado" onPress={fetchContratadoData} />
+
       {loading && <ActivityIndicator size="large" color="#0000ff" />}
       {error && <Text style={styles.error}>{error}</Text>}
-      {dataContratante && dataProfissional && (
+      {dataContratante && dataContratado && (
         <View>
           <Text style={styles.title}>Dados Recebidos do Contratante:</Text>
           <Text style={styles.data}>Nome: {dataContratante.nomeContratante}</Text>
           <Text style={styles.data}>CPF: {dataContratante.cpfContratante}</Text>
 
-          <Text style={styles.title}>Dados Recebidos do Profissional:</Text>
-          <Text style={styles.data}>Nome: {dataProfissional.nomeContratado}</Text>
-          <Text style={styles.data}>CPF: {dataProfissional.cpfContratado}</Text>
+          <Text style={styles.title}>Dados Recebidos do Contratado:</Text>
+          <Text style={styles.data}>Nome: {dataContratado.nomeContratado}</Text>
+          <Text style={styles.data}>CPF: {dataContratado.cpfContratado}</Text>
 
           <Button title="Gerar PDF" onPress={createPDF} color="#4CAF50" />
         </View>
       )}
-      <Button title="Recarregar Dados" onPress={() => { fetchContratanteData(); fetchProfissionalData(); }} />
+      <Button title="Recarregar Dados" onPress={() => { fetchContratanteData(); fetchContratadoData(); }} />
     </View>
   );
 };
@@ -153,6 +180,14 @@ const styles = StyleSheet.create({
   },
   error: {
     color: 'red',
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    width: '100%',
+    paddingHorizontal: 10,
   },
 });
 
