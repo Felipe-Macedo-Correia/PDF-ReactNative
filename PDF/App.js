@@ -117,7 +117,7 @@ const App = () => {
       {error && <Text style={styles.error}>{error}</Text>}
       {dataContratante && dataProfissional && (
         <View>
-          <Text style={styles.title}>Dados Recebidos do Contratante:</Text>
+          <Text style={styles.title}>Dados Recebidos do Contratante</Text>
           <Text style={styles.data}>Nome: {dataContratante.nomeContratante}</Text>
           <Text style={styles.data}>CPF: {dataContratante.cpfContratante}</Text>
 
